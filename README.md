@@ -81,16 +81,3 @@ ros2 run revati_pipeline control_node
 * **`revati_pipeline/perception_node.py`**: The OpenCV computer vision node.
 * **`revati_pipeline/control_node.py`**: The Ackerman kinematic control node.
 
-## 🐛 Troubleshooting Known Issues
-
-* **Gazebo White Screen / GUI Crash:** If Gazebo fails to render the 3D environment, force software rendering before launching:
-  `export GZ_SIM_RENDER_ENGINE_GUI=ogre`
-* **No Image in RViz:** The Gazebo camera publishes using a "Best Effort" QoS policy. Ensure RViz is set to "Best Effort" rather than "Reliable" in the topic display settings.
-* **Bridge Failing to Connect:** If using Ignition Fortress, the bridge requires `ignition.msgs` syntax rather than the newer `gz.msgs` syntax.
-```
-
-***
-
-   git push origin main
-   ```
-```
