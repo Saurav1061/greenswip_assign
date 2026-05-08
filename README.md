@@ -1,4 +1,3 @@
-```markdown
 # 🏎️ Greenswip Vision-to-Control Pipeline
 **A ROS 2 Perception & Control System for Ackerman-Steered Robots**
 
