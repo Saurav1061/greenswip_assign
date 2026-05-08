@@ -1,83 +1,144 @@
-
 ```markdown
-# Greenswip Vision-to-Control Pipeline
+# 🏎️ Greenswip Vision-to-Control Pipeline
+**A ROS 2 Perception & Control System for Ackerman-Steered Robots**
 
-A complete ROS 2 perception-to-action pipeline for an Ackerman-steered mobile robot. This project was developed as a technical assignment for Revati Technologies.
+Developed as a technical assignment for **Revati Technologies**, this project demonstrates a full-stack robotics pipeline: spawning a custom Ackerman robot in **Ignition Gazebo**, processing live camera feeds with **OpenCV**, and navigating toward a specific target using a **Proportional (P) Controller**.
 
-The system spawns a custom Ackerman robot in an Ignition Gazebo environment, uses OpenCV to process the onboard camera feed, isolates a specific target box while ignoring decoy shapes, and uses a Proportional (P) controller to navigate the robot to the target without violating non-holonomic Ackerman constraints.
+---
 
-## 🛠️ System Requirements
-* **OS:** Ubuntu 22.04 LTS
-* **ROS 2:** Humble Hawksbill
-* **Simulation:** Ignition Gazebo (Fortress)
-* **Dependencies:**
-  * `rclpy`
-  * `geometry_msgs`
-  * `sensor_msgs`
-  * `cv_bridge`
-  * `ros_gz_bridge`
-  * `ros_gz_sim`
-  * `robot_state_publisher`
-  * `xacro`
-  * OpenCV (`python3-opencv`)
+## 🏗️ System Overview
+The pipeline consists of three primary layers working in synchronization:
 
-## 🏗️ Installation & Setup
+1.  **Environment & Simulation**: A custom-built URDF robot with Ackerman kinematics spawned in an Ignition Gazebo world containing various geometric primitives.
+2.  **Perception (OpenCV)**: A vision node that applies dual-HSV masking to isolate a dark red target while filtering out decoys (spheres, cylinders).
+3.  **Control (Ackerman Kinematics)**: A controller that translates visual pixel error into steering angles ($\delta$) and linear velocity ($v$), respecting physical joint limits.
 
-1. **Source your ROS 2 installation:**
-   ```bash
-   source /opt/ros/humble/setup.bash
-   
-```
+---
 
-2. **Clone this repository into your ROS 2 workspace `src` folder:**
-   *(Assuming your workspace is `~/revati_ws`)*
+## 🛠️ Requirements & Dependencies
+
+| Category | Requirement |
+| :--- | :--- |
+| **Operating System** | Ubuntu 22.04 LTS |
+| **Middleware** | ROS 2 Humble Hawksbill |
+| **Simulator** | Ignition Gazebo (Fortress) |
+| **Languages** | Python 3.10+, C++ (for core ROS 2) |
+| **Libraries** | OpenCV, `cv_bridge`, `xacro` |
+
+---
+
+## 📥 Installation & Setup
+
+1. **Prepare Workspace**
    ```bash
    mkdir -p ~/revati_ws/src
    cd ~/revati_ws/src
-   git clone [https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git](https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git)
-   ```
 
-3. **Build the workspace:**
-   ```bash
-   cd ~/revati_ws
-   colcon build
-   ```
-
-4. **Source the workspace:**
-   ```bash
-   source install/setup.bash
-   
 ```
 
-## 🚀 Running the Pipeline
+2. **Clone & Build**
+```bash
+git clone [https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git](https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git)
+cd ~/revati_ws
+colcon build --symlink-install
 
-To run the complete system, you will need three terminal windows. Remember to run `cd ~/revati_ws` and `source install/setup.bash` in **every** new terminal before running these commands.
 
-**Terminal 1: Launch the Simulation Architecture**
-This script parses the Xacro URDF, launches Ignition Gazebo with the `shapes.sdf` world, spawns the robot, and establishes the `ros_gz_bridge` for sensor/velocity data.
+```
+
+
+
+```
+
+3. **Environment Configuration**
+   Add this to your `~/.bashrc` to save time:
+   ```bash
+   source /opt/ros/humble/setup.bash
+   source ~/revati_ws/install/setup.bash
+   
+
+```
+
+---
+
+## 🚀 Execution Guide
+
+To run the pipeline, open three separate terminals. Ensure each is sourced (`source install/setup.bash`).
+
+### Step 1: Launch Simulation
+
+Initializes the Gazebo world, robot state publisher, and the ROS-GZ bridge.
+
 ```bash
 ros2 launch revati_pipeline spawn_robot.launch.py
-```
-*(Note: If Gazebo launches in a paused state, click the 'Play' button in the bottom left corner to begin sensor publishing).*
 
-**Terminal 2: Start the Perception Node**
-This node subscribes to `/camera/image_raw` using a `sensor_data` QoS profile. It applies a custom dual-HSV mask to isolate the dark red target box, calculates the centroid, and publishes the visual offset to the `/visual_error` topic.
+```
+
+> **Note:** If Gazebo is paused, press the **Play** button in the GUI to start the physics engine and sensor data stream.
+
+### Step 2: Launch Perception Node
+
+Processes `/camera/image_raw` to find the target.
+
 ```bash
 ros2 run revati_pipeline perception_node
-```
-*(Optional: You can view the live OpenCV tracking feed by running `rviz2` or `rqt_image_view` and subscribing to `/camera/debug_image`).*
 
-**Terminal 3: Start the Control Node**
-This node subscribes to `/visual_error` and translates the pixel offset into Ackerman steering commands (`/cmd_vel`). It ensures a constant forward velocity and clamps the steering angle to the physical joint limits.
+```
+
+* **Debug Tip:** Use `ros2 run rqt_image_view rqt_image_view` to visualize the `/camera/debug_image` topic.
+
+### Step 3: Launch Control Node
+
+Closes the loop by sending commands to `/cmd_vel`.
+
 ```bash
 ros2 run revati_pipeline control_node
+
 ```
 
-## 📂 Project Structure
+---
 
-* **`launch/spawn_robot.launch.py`**: The main launch file combining `robot_state_publisher`, `ros_gz_sim`, and `ros_gz_bridge`.
-* **`urdf/ack.urdf.xacro`**: The robot description file, updated with Ignition Gazebo plugins for Ackerman steering and Camera sensor simulation.
-* **`worlds/shapes.sdf`**: The simulated environment containing the target Box and decoy shapes (Sphere, Cylinder, Capsule).
-* **`revati_pipeline/perception_node.py`**: The OpenCV computer vision node.
-* **`revati_pipeline/control_node.py`**: The Ackerman kinematic control node.
+## 📂 Repository Structure
 
+```text
+revati_pipeline/
+├── launch/
+│   └── spawn_robot.launch.py   # Orchestrates Gazebo, URDF, and Bridges
+├── revati_pipeline/
+│   ├── perception_node.py      # OpenCV centroid tracking & HSV filtering
+│   └── control_node.py         # P-Controller for Ackerman steering
+├── urdf/
+│   └── ack.urdf.xacro          # Robot model with Gazebo plugins
+├── worlds/
+│   └── shapes.sdf              # Simulation environment with target/decoys
+├── package.xml                 # Package dependencies
+└── setup.py                    # Python entry points and install logic
+
+```
+
+---
+
+## ⚙️ Technical Details
+
+### Perception Strategy
+
+The robot uses a **dual-HSV mask** to ensure robust detection of the red target box across varying light conditions in Gazebo. It filters by area size to ignore small noise and publishes the horizontal pixel offset ($e_x$) from the image center.
+
+### Control Law
+
+The controller utilizes a Proportional (P) gain to determine steering:
+
+
+$$\delta = K_p \cdot e_x$$
+
+
+Where:
+
+* $\delta$ is the steering angle.
+* $K_p$ is the proportional gain.
+* $e_x$ is the normalized visual error.
+The node enforces a **saturation limit** on the steering angle to prevent the simulated servo joints from exceeding physical constraints.
+
+```
+
+
+```
